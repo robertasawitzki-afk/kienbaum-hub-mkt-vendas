@@ -17,6 +17,18 @@ export const Route = createFileRoute("/materiais/repositorio")({
 
 type FileRow = Database["public"]["Tables"]["materiais_files"]["Row"];
 
+const MIME_BY_EXT: Record<string, string> = {
+  html: "text/html", htm: "text/html",
+  pdf: "application/pdf",
+  png: "image/png", jpg: "image/jpeg", jpeg: "image/jpeg", webp: "image/webp",
+  txt: "text/plain", csv: "text/csv",
+};
+
+function guessMime(filename: string, fallback: string | null): string {
+  const ext = filename.split(".").pop()?.toLowerCase() ?? "";
+  return MIME_BY_EXT[ext] ?? fallback ?? "application/octet-stream";
+}
+
 function RepositorioPage() {
   const [files, setFiles] = useState<FileRow[] | null>(null);
   const [search, setSearch] = useState("");
@@ -30,10 +42,22 @@ function RepositorioPage() {
   }, []);
 
   async function view(row: FileRow) {
-    const { data } = await supabase.storage
-      .from("materiais")
-      .createSignedUrl(row.storage_path, 300, { download: false });
-    if (data?.signedUrl) window.open(data.signedUrl, "_blank");
+    // O Content-Type gravado no Storage no upload nem sempre bate com a extensão
+    // (ex.: .html salvo como texto puro) — refaz o blob com o mime correto pela
+    // extensão do arquivo, senão o navegador mostra o código-fonte em vez de renderizar.
+    const { data, error } = await supabase.storage.from("materiais").download(row.storage_path);
+    if (error || !data) {
+      const { data: signed } = await supabase.storage
+        .from("materiais")
+        .createSignedUrl(row.storage_path, 300, { download: false });
+      if (signed?.signedUrl) window.open(signed.signedUrl, "_blank");
+      return;
+    }
+    const mime = guessMime(row.storage_path, row.mime_type);
+    const blob = data.type === mime ? data : new Blob([data], { type: mime });
+    const url = URL.createObjectURL(blob);
+    window.open(url, "_blank");
+    setTimeout(() => URL.revokeObjectURL(url), 60_000);
   }
 
   async function download(row: FileRow) {
