@@ -4,6 +4,7 @@ import { ArrowRight } from "lucide-react";
 import { NAV } from "@/lib/nav";
 import { useAuth } from "@/lib/auth-context";
 import logoKienbaum from "@/assets/kienbaum-logo-white.png";
+import peerzMark from "@/assets/peerz-mark-gray.png";
 
 
 export const Route = createFileRoute("/")({
@@ -27,7 +28,8 @@ function Index() {
       <header className="mb-12">
         <div className="mb-8 flex items-center justify-center gap-4 rounded-[4px] bg-primary px-8 py-6">
           <img src={logoKienbaum} alt="Kienbaum" className="h-10 w-auto" />
-          {/* TODO: logo da Peerz aqui, na sequência (Kienbaum & Peerz) — aguardando arquivo */}
+          <span className="h-8 w-px bg-primary-foreground/25" />
+          <img src={peerzMark} alt="Peerz" className="h-9 w-auto" />
         </div>
         <p className="text-xs uppercase tracking-[0.22em] text-accent">Kienbaum Porto Alegre</p>
         <h1 className="mt-3 text-4xl font-semibold tracking-tight text-foreground">

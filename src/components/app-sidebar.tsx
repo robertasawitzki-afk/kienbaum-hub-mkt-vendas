@@ -15,6 +15,7 @@ import {
 import { NAV } from "@/lib/nav";
 import { useAuth } from "@/lib/auth-context";
 import kienbaumMark from "@/assets/kienbaum-mark-white.png";
+import peerzMark from "@/assets/peerz-mark-gray.png";
 
 export function AppSidebar() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
@@ -29,9 +30,10 @@ export function AppSidebar() {
     <Sidebar collapsible="icon" className="border-r border-sidebar-border">
       <SidebarHeader className="border-b border-sidebar-border px-3 py-3">
         <Link to="/" className="flex items-center gap-2">
-          <div className="flex h-8 items-center gap-1.5">
+          <div className="flex h-8 items-center gap-2">
             <img src={kienbaumMark} alt="Kienbaum" className="h-7 w-auto" />
-            {/* TODO: logo da Peerz aqui, na sequência (Kienbaum & Peerz) — aguardando arquivo */}
+            <span className="h-5 w-px bg-sidebar-border" />
+            <img src={peerzMark} alt="Peerz" className="h-6 w-auto" />
           </div>
           <div className="flex flex-col leading-tight group-data-[collapsible=icon]:hidden">
             <span className="text-xs font-bold uppercase tracking-[0.18em]">Kienbaum</span>
