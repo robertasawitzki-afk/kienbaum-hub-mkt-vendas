@@ -35,7 +35,7 @@ function TecnicasPage() {
       <PageHeader
         module="Treinamento · 1.2"
         title="Técnicas de Negociação Consultiva"
-        description="Quatro frameworks essenciais para qualificar oportunidades, vender pelo valor e decidir com clareza."
+        description="Três frameworks essenciais para qualificar oportunidades e vender pelo valor — cada um com avaliação de reunião e decisão Go/No-Go embutidas."
       />
 
       <Card className="mb-6">
