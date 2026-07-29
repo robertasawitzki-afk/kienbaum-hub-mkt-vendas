@@ -1,0 +1,110 @@
+@import "tailwindcss" source(none);
+@source "../src";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/*
+ * Kienbaum Hub de Mkt & Vendas — design system
+ * Paleta oficial Kienbaum: navy #28434F + accent #5B80A3 + neutros claros.
+ * Flat corporativo: bordas 0.5px, cantos 4px, sem sombras, sem gradientes.
+ */
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 2px);
+  --radius-md: var(--radius);
+  --radius-lg: calc(var(--radius) + 2px);
+  --radius-xl: calc(var(--radius) + 6px);
+  --radius-2xl: calc(var(--radius) + 10px);
+  --radius-3xl: calc(var(--radius) + 12px);
+  --radius-4xl: calc(var(--radius) + 16px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-ring-offset-background: var(--background);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --font-sans: "Montserrat", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-proposta: Arial, Helvetica, sans-serif;
+}
+
+:root {
+  --radius: 0.25rem;              /* 4px flat corporativo */
+  --background: #F7F6F4;          /* fundo claro Kienbaum */
+  --foreground: #28434F;          /* navy principal */
+  --card: #FFFFFF;
+  --card-foreground: #28434F;
+  --popover: #FFFFFF;
+  --popover-foreground: #28434F;
+  --primary: #28434F;             /* navy */
+  --primary-foreground: #FFFFFF;
+  --secondary: #F7F6F4;
+  --secondary-foreground: #28434F;
+  --muted: #F7F6F4;
+  --muted-foreground: #726C68;    /* texto secundário */
+  --accent: #5B80A3;              /* accent Kienbaum */
+  --accent-foreground: #FFFFFF;
+  --destructive: #B00020;
+  --destructive-foreground: #FFFFFF;
+  --border: #D8D6D2;              /* linha/borda 0.5px */
+  --input: #D8D6D2;
+  --ring: #5B80A3;
+  --chart-1: #28434F;
+  --chart-2: #5B80A3;
+  --chart-3: #726C68;
+  --chart-4: #B00020;
+  --chart-5: #D8D6D2;
+  /* Sidebar navy */
+  --sidebar: #28434F;
+  --sidebar-foreground: #FFFFFF;
+  --sidebar-primary: #5B80A3;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #35525F;
+  --sidebar-accent-foreground: #FFFFFF;
+  --sidebar-border: #35525F;
+  --sidebar-ring: #5B80A3;
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1, h2, h3, h4 {
+    letter-spacing: -0.01em;
+  }
+}
