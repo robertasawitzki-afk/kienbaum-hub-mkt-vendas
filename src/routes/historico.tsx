@@ -22,6 +22,8 @@ const KIND_LABEL: Record<Row["kind"], string> = {
   deck: "Deck",
   concorrencia: "Concorrência",
   email: "E-mail",
+  carteira: "Carteira",
+  tecnicas: "Técnicas",
 };
 
 function Historico() {

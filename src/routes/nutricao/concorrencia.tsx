@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { CopyButton } from "@/components/copy-button";
 import { SaveOutputButton } from "@/components/save-output-button";
 import { AudioNote } from "@/components/audio-note";
+import { OutputsHistory } from "@/components/outputs-history";
 import { competitionResearch } from "@/lib/ai.functions";
 
 export const Route = createFileRoute("/nutricao/concorrencia")({
@@ -96,6 +97,10 @@ function ConcorrenciaPage() {
             {out && <pre className="whitespace-pre-wrap text-sm font-sans leading-relaxed">{out}</pre>}
           </CardContent>
         </Card>
+      </div>
+
+      <div className="mt-6">
+        <OutputsHistory kind="concorrencia" />
       </div>
     </PageContainer>
   );

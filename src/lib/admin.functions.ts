@@ -229,6 +229,41 @@ export const listAudit = createServerFn({ method: "POST" })
     return data ?? [];
   });
 
+/** Lista o conteúdo gerado por IA de todos os usuários (admin only). */
+export const listAllOutputs = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { supabase, userId } = context as any;
+    await assertAdmin(supabase, userId);
+    const { data: outputs, error } = await supabase
+      .from("ai_outputs")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(500);
+    if (error) throw new Error(error.message);
+
+    const ids = [...new Set((outputs ?? []).map((o: any) => o.user_id))];
+    const { data: profiles } = ids.length
+      ? await supabase.from("profiles").select("id, display_name").in("id", ids)
+      : { data: [] as any[] };
+    const nameMap = new Map((profiles ?? []).map((p: any) => [p.id, p.display_name]));
+
+    return (outputs ?? []).map((o: any) => ({ ...o, author_name: nameMap.get(o.user_id) ?? null }));
+  });
+
+/** Admin exclui qualquer item de conteúdo gerado (moderação). */
+export const deleteOutput = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i: unknown) => z.object({ id: z.string().uuid() }).parse(i))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId, claims } = context as any;
+    await assertAdmin(supabase, userId);
+    const { error } = await supabase.from("ai_outputs").delete().eq("id", data.id);
+    if (error) throw new Error(error.message);
+    await logAudit(supabase, userId, claims?.email, "delete_output", `ai_output:${data.id}`);
+    return { ok: true };
+  });
+
 export const listAllMaterials = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {

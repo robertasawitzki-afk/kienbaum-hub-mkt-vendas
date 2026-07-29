@@ -104,9 +104,10 @@ export const NAV: NavGroup[] = [
     slug: "minha-conta",
     label: "Minha Conta",
     shortLabel: "Minha Conta",
-    description: "Sua timeline de atividades e histórico de IA.",
+    description: "Seu perfil, timeline de atividades e histórico de IA.",
     icon: User,
     items: [
+      { to: "/conta", label: "Meu Perfil", icon: User },
       { to: "/timeline", label: "Timeline", icon: Activity },
       { to: "/historico", label: "Meu histórico de IA", icon: History },
     ],

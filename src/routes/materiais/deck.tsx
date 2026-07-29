@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { CopyButton } from "@/components/copy-button";
 import { SaveOutputButton } from "@/components/save-output-button";
 import { AudioNote } from "@/components/audio-note";
+import { OutputsHistory } from "@/components/outputs-history";
 import { analyzeDeck, generateDeckHtml } from "@/lib/ai.functions";
 import { FileDrop, type PickedFile } from "@/components/file-drop";
 import { supabase } from "@/integrations/supabase/client";
@@ -268,6 +269,10 @@ function DeckPage() {
             </Card>
           )}
         </div>
+      </div>
+
+      <div className="mt-6">
+        <OutputsHistory kind="deck" title="Histórico deste espaço (análises e materiais)" />
       </div>
     </PageContainer>
   );

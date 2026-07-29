@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { CopyButton } from "@/components/copy-button";
 import { SaveOutputButton } from "@/components/save-output-button";
 import { AudioNote } from "@/components/audio-note";
+import { OutputsHistory } from "@/components/outputs-history";
 import { prepareMeeting, researchClient } from "@/lib/ai.functions";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FileDrop, type PickedFile } from "@/components/file-drop";
@@ -178,6 +179,10 @@ function ReuniaoPage() {
           </div>
         </TabsContent>
       </Tabs>
+
+      <div className="mt-6">
+        <OutputsHistory kind="reuniao" />
+      </div>
     </PageContainer>
   );
 }

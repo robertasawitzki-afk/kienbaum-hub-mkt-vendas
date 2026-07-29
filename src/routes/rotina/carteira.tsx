@@ -11,6 +11,7 @@ import { FileDrop, type PickedFile } from "@/components/file-drop";
 import { AudioNote } from "@/components/audio-note";
 import { CopyButton } from "@/components/copy-button";
 import { SaveOutputButton } from "@/components/save-output-button";
+import { OutputsHistory } from "@/components/outputs-history";
 import { analyzeCarteira } from "@/lib/ai.functions";
 
 export const Route = createFileRoute("/rotina/carteira")({
@@ -70,7 +71,7 @@ function CarteiraPage() {
             {aiOut && (
               <>
                 <div className="mb-2 flex justify-end gap-2">
-                  <SaveOutputButton kind="deck" title="Análise de carteira" content={aiOut} meta={{ file: file?.filename }} />
+                  <SaveOutputButton kind="carteira" title="Análise de carteira" content={aiOut} meta={{ file: file?.filename }} />
                   <CopyButton text={aiOut} />
                 </div>
                 <pre className="whitespace-pre-wrap text-sm font-sans leading-relaxed">{aiOut}</pre>
@@ -79,6 +80,10 @@ function CarteiraPage() {
           </div>
         </CardContent>
       </Card>
+
+      <div className="mt-6">
+        <OutputsHistory kind="carteira" />
+      </div>
     </PageContainer>
   );
 }

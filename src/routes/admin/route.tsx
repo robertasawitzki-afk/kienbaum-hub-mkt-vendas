@@ -1,7 +1,7 @@
 import { createFileRoute, Link, Outlet, useRouterState, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { ArrowLeft, Users, Activity, FolderOpen, History, ShieldAlert, Loader2 } from "lucide-react";
+import { ArrowLeft, Users, Activity, FolderOpen, History, Sparkles, ShieldAlert, Loader2 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { adminExists } from "@/lib/admin.functions";
 import { cn } from "@/lib/utils";
@@ -14,7 +14,8 @@ const TABS = [
   { to: "/admin/usuarios", label: "Usuários", icon: Users },
   { to: "/admin/saude", label: "Saúde do Banco", icon: Activity },
   { to: "/admin/materiais", label: "Materiais", icon: FolderOpen },
-  { to: "/admin/historico", label: "Histórico", icon: History },
+  { to: "/admin/conteudo", label: "Conteúdo Gerado", icon: Sparkles },
+  { to: "/admin/historico", label: "Auditoria", icon: History },
 ] as const;
 
 function AdminLayout() {

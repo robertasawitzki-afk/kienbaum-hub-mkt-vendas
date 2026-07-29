@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { simulatorChat, simulatorFeedback, synthesizeSpeechFn } from "@/lib/ai.functions";
 import { SaveOutputButton } from "@/components/save-output-button";
+import { OutputsHistory } from "@/components/outputs-history";
 
 export const Route = createFileRoute("/treinamento/simulador")({
   head: () => ({ meta: [{ title: "Simulador de Vendas — Kienbaum Hub de Mkt & Vendas" }] }),
@@ -267,6 +268,10 @@ function SimuladorPage() {
           </CardContent>
         </Card>
       )}
+
+      <div className="mt-6">
+        <OutputsHistory kind="simulador" title="Simulações salvas" />
+      </div>
     </PageContainer>
   );
 }

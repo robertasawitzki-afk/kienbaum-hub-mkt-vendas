@@ -289,7 +289,7 @@ export type Database = {
       }
     }
     Enums: {
-      ai_kind: "simulador" | "reuniao" | "deck" | "concorrencia" | "email"
+      ai_kind: "simulador" | "reuniao" | "deck" | "concorrencia" | "email" | "carteira" | "tecnicas"
       app_role:
         | "admin"
         | "cp"
@@ -424,7 +424,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      ai_kind: ["simulador", "reuniao", "deck", "concorrencia", "email"],
+      ai_kind: ["simulador", "reuniao", "deck", "concorrencia", "email", "carteira", "tecnicas"],
       app_role: ["admin", "cp", "socio", "head_produto", "consultora", "staff"],
     },
   },

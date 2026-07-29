@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { CopyButton } from "@/components/copy-button";
 import { SaveOutputButton } from "@/components/save-output-button";
 import { AudioNote } from "@/components/audio-note";
+import { OutputsHistory } from "@/components/outputs-history";
 import { nurtureEmail } from "@/lib/ai.functions";
 import { FileDrop, type PickedFile } from "@/components/file-drop";
 
@@ -115,6 +116,10 @@ function EmailsPage() {
             {out && <pre className="whitespace-pre-wrap text-sm font-sans leading-relaxed">{out}</pre>}
           </CardContent>
         </Card>
+      </div>
+
+      <div className="mt-6">
+        <OutputsHistory kind="email" />
       </div>
     </PageContainer>
   );

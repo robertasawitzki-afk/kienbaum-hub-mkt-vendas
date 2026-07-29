@@ -12,12 +12,14 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminRouteRouteImport } from './routes/admin/route'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as ContaRouteImport } from './routes/conta'
 import { Route as DefinirSenhaRouteImport } from './routes/definir-senha'
 import { Route as HistoricoRouteImport } from './routes/historico'
 import { Route as NovaPropostaRouteImport } from './routes/nova-proposta'
 import { Route as PropostasRouteImport } from './routes/propostas'
 import { Route as TimelineRouteImport } from './routes/timeline'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
+import { Route as AdminConteudoRouteImport } from './routes/admin/conteudo'
 import { Route as AdminHistoricoRouteImport } from './routes/admin/historico'
 import { Route as AdminMateriaisRouteImport } from './routes/admin/materiais'
 import { Route as AdminSaudeRouteImport } from './routes/admin/saude'
@@ -53,6 +55,11 @@ const AuthRoute = AuthRouteImport.update({
   path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ContaRoute = ContaRouteImport.update({
+  id: '/conta',
+  path: '/conta',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DefinirSenhaRoute = DefinirSenhaRouteImport.update({
   id: '/definir-senha',
   path: '/definir-senha',
@@ -81,6 +88,11 @@ const TimelineRoute = TimelineRouteImport.update({
 const AdminIndexRoute = AdminIndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
+const AdminConteudoRoute = AdminConteudoRouteImport.update({
+  id: '/conteudo',
+  path: '/conteudo',
   getParentRoute: () => AdminRouteRoute,
 } as any)
 const AdminHistoricoRoute = AdminHistoricoRouteImport.update({
@@ -183,11 +195,13 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteRouteWithChildren
   '/auth': typeof AuthRoute
+  '/conta': typeof ContaRoute
   '/definir-senha': typeof DefinirSenhaRoute
   '/historico': typeof HistoricoRoute
   '/nova-proposta': typeof NovaPropostaRoute
   '/propostas': typeof PropostasRoute
   '/timeline': typeof TimelineRoute
+  '/admin/conteudo': typeof AdminConteudoRoute
   '/admin/historico': typeof AdminHistoricoRoute
   '/admin/materiais': typeof AdminMateriaisRoute
   '/admin/saude': typeof AdminSaudeRoute
@@ -212,11 +226,13 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/conta': typeof ContaRoute
   '/definir-senha': typeof DefinirSenhaRoute
   '/historico': typeof HistoricoRoute
   '/nova-proposta': typeof NovaPropostaRoute
   '/propostas': typeof PropostasRoute
   '/timeline': typeof TimelineRoute
+  '/admin/conteudo': typeof AdminConteudoRoute
   '/admin/historico': typeof AdminHistoricoRoute
   '/admin/materiais': typeof AdminMateriaisRoute
   '/admin/saude': typeof AdminSaudeRoute
@@ -243,11 +259,13 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteRouteWithChildren
   '/auth': typeof AuthRoute
+  '/conta': typeof ContaRoute
   '/definir-senha': typeof DefinirSenhaRoute
   '/historico': typeof HistoricoRoute
   '/nova-proposta': typeof NovaPropostaRoute
   '/propostas': typeof PropostasRoute
   '/timeline': typeof TimelineRoute
+  '/admin/conteudo': typeof AdminConteudoRoute
   '/admin/historico': typeof AdminHistoricoRoute
   '/admin/materiais': typeof AdminMateriaisRoute
   '/admin/saude': typeof AdminSaudeRoute
@@ -275,11 +293,13 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/auth'
+    | '/conta'
     | '/definir-senha'
     | '/historico'
     | '/nova-proposta'
     | '/propostas'
     | '/timeline'
+    | '/admin/conteudo'
     | '/admin/historico'
     | '/admin/materiais'
     | '/admin/saude'
@@ -304,11 +324,13 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/auth'
+    | '/conta'
     | '/definir-senha'
     | '/historico'
     | '/nova-proposta'
     | '/propostas'
     | '/timeline'
+    | '/admin/conteudo'
     | '/admin/historico'
     | '/admin/materiais'
     | '/admin/saude'
@@ -334,11 +356,13 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/auth'
+    | '/conta'
     | '/definir-senha'
     | '/historico'
     | '/nova-proposta'
     | '/propostas'
     | '/timeline'
+    | '/admin/conteudo'
     | '/admin/historico'
     | '/admin/materiais'
     | '/admin/saude'
@@ -365,6 +389,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRouteRoute: typeof AdminRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
+  ContaRoute: typeof ContaRoute
   DefinirSenhaRoute: typeof DefinirSenhaRoute
   HistoricoRoute: typeof HistoricoRoute
   NovaPropostaRoute: typeof NovaPropostaRoute
@@ -410,6 +435,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/conta': {
+      id: '/conta'
+      path: '/conta'
+      fullPath: '/conta'
+      preLoaderRoute: typeof ContaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/definir-senha': {
       id: '/definir-senha'
       path: '/definir-senha'
@@ -450,6 +482,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/admin/'
       preLoaderRoute: typeof AdminIndexRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    '/admin/conteudo': {
+      id: '/admin/conteudo'
+      path: '/conteudo'
+      fullPath: '/admin/conteudo'
+      preLoaderRoute: typeof AdminConteudoRouteImport
       parentRoute: typeof AdminRouteRoute
     }
     '/admin/historico': {
@@ -589,6 +628,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface AdminRouteRouteChildren {
+  AdminConteudoRoute: typeof AdminConteudoRoute
   AdminHistoricoRoute: typeof AdminHistoricoRoute
   AdminMateriaisRoute: typeof AdminMateriaisRoute
   AdminSaudeRoute: typeof AdminSaudeRoute
@@ -597,6 +637,7 @@ interface AdminRouteRouteChildren {
 }
 
 const AdminRouteRouteChildren: AdminRouteRouteChildren = {
+  AdminConteudoRoute: AdminConteudoRoute,
   AdminHistoricoRoute: AdminHistoricoRoute,
   AdminMateriaisRoute: AdminMateriaisRoute,
   AdminSaudeRoute: AdminSaudeRoute,
@@ -612,6 +653,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRouteRoute: AdminRouteRouteWithChildren,
   AuthRoute: AuthRoute,
+  ContaRoute: ContaRoute,
   DefinirSenhaRoute: DefinirSenhaRoute,
   HistoricoRoute: HistoricoRoute,
   NovaPropostaRoute: NovaPropostaRoute,

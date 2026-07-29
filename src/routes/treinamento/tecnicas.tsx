@@ -14,9 +14,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { AudioNote } from "@/components/audio-note";
 import { CopyButton } from "@/components/copy-button";
+import { OutputsHistory } from "@/components/outputs-history";
 import { qualifyGpct, evaluateMeeting } from "@/lib/ai.functions";
 import { logActivity } from "@/lib/activity";
 import { useAuth } from "@/lib/auth-context";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/treinamento/tecnicas")({
   head: () => ({ meta: [{ title: "Técnicas de Negociação — Kienbaum Hub de Mkt & Vendas" }] }),
@@ -69,6 +71,10 @@ function TecnicasPage() {
           <Bant />
         </TabsContent>
       </Tabs>
+
+      <div className="mt-6">
+        <OutputsHistory kind="tecnicas" title="Qualificações e avaliações salvas" />
+      </div>
     </PageContainer>
   );
 }
@@ -169,11 +175,14 @@ function EvalPanel({
 
   async function save() {
     if (!user || !analysis) return;
+    const title = `Avaliação de reunião (${framework.toUpperCase()}) — ${cliente}`;
+    await supabase.from("ai_outputs").insert({
+      user_id: user.id, kind: "tecnicas", title, content: analysis,
+      meta: { framework, cliente, notas, marks: gng.marks, score: gng.score, max: gng.max, pct: gng.pct } as never,
+    });
     await logActivity({
-      userId: user.id, kind: "save",
-      title: `Avaliação de reunião (${framework.toUpperCase()}) — ${cliente}`,
-      route: "/treinamento/tecnicas",
-      details: { framework, cliente, notas, marks: gng.marks, score: gng.score, max: gng.max, pct: gng.pct, analysis },
+      userId: user.id, kind: "save", title, route: "/treinamento/tecnicas",
+      details: { framework, cliente, score: gng.score, max: gng.max, pct: gng.pct },
     });
     toast.success("Avaliação salva no histórico");
   }
@@ -232,10 +241,14 @@ function Gpct() {
 
   async function save() {
     if (!user || !verdict) return;
+    const title = `GPCT — ${cliente}`;
+    await supabase.from("ai_outputs").insert({
+      user_id: user.id, kind: "tecnicas", title, content: verdict,
+      meta: { framework: "gpct", cliente, ...v } as never,
+    });
     await logActivity({
-      userId: user.id, kind: "save",
-      title: `GPCT — ${cliente}`, route: "/treinamento/tecnicas",
-      details: { framework: "gpct", cliente, ...v, verdict },
+      userId: user.id, kind: "save", title, route: "/treinamento/tecnicas",
+      details: { framework: "gpct", cliente },
     });
     toast.success("Qualificação salva no histórico");
   }
