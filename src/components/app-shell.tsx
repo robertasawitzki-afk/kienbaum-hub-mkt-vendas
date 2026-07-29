@@ -83,7 +83,7 @@ function AppShellInner({ children }: { children: ReactNode }) {
             <SidebarTrigger className="text-muted-foreground hover:text-foreground" />
             <div className="flex items-baseline gap-2">
               <span className="text-sm font-bold uppercase tracking-[0.18em] text-foreground">
-                Kienbaum
+                Kienbaum &amp; Peerz
               </span>
               <span className="text-xs text-muted-foreground">|</span>
               <span className="text-sm font-medium text-muted-foreground">Hub de Mkt &amp; Vendas</span>
