@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { Bot, Mic, MicOff, Send, Square, Volume2, VolumeX, Sparkles, Loader2 } from "lucide-react";
+import { Bot, Mic, MicOff, Send, Square, Volume2, VolumeX, Sparkles, Loader2, Ear } from "lucide-react";
 import { PageContainer, PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,8 +18,10 @@ export const Route = createFileRoute("/treinamento/simulador")({
 
 type Msg = { role: "user" | "assistant"; content: string };
 
+// A Google não documenta o gênero de cada voz — use "Testar voz" para calibrar de ouvido
+// e trocar o campo `voice` de cada persona se alguma soar errada.
 const PERSONAS = [
-  { key: "ceo_industrial", label: "CEO industrial (familiar, R$ 400M)", voice: "Charon" }, // Roberto Almeida (m)
+  { key: "ceo_industrial", label: "CEO industrial (familiar, R$ 400M)", voice: "Puck" }, // Roberto Almeida (m)
   { key: "cfo", label: "CFO de serviços B2B (R$ 800M)", voice: "Kore" }, // Marina Costa (f)
   { key: "chro", label: "CHRO de varejo (15k colaboradores)", voice: "Orus" }, // Paulo Henrique (m)
   { key: "dono_familiar", label: "Dono familiar fundador (72 anos)", voice: "Fenrir" }, // Dr. Antônio (m)
@@ -35,6 +37,8 @@ function SimuladorPage() {
   const [thinking, setThinking] = useState(false);
   const [listening, setListening] = useState(false);
   const [voiceOut, setVoiceOut] = useState(true);
+  const [voiceLoading, setVoiceLoading] = useState(false);
+  const [testingVoice, setTestingVoice] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [loadingFb, setLoadingFb] = useState(false);
   const recogRef = useRef<any>(null);
@@ -43,7 +47,7 @@ function SimuladorPage() {
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, thinking]);
+  }, [messages, thinking, voiceLoading]);
 
   function speakBrowserFallback(text: string) {
     if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
@@ -61,6 +65,7 @@ function SimuladorPage() {
 
   async function speak(text: string) {
     if (!voiceOut) return;
+    setVoiceLoading(true);
     try {
       const voice = PERSONAS.find((p) => p.key === persona)?.voice;
       const { audioUrl } = await speakFn({ data: { text: text.slice(0, 2000), voice } });
@@ -71,6 +76,24 @@ function SimuladorPage() {
     } catch {
       // Gemini TTS indisponível (chave/modelo) — cai para a voz do navegador.
       speakBrowserFallback(text);
+    } finally {
+      setVoiceLoading(false);
+    }
+  }
+
+  async function testVoice() {
+    const voice = PERSONAS.find((p) => p.key === persona)?.voice;
+    setTestingVoice(true);
+    try {
+      const { audioUrl } = await speakFn({ data: { text: "Olá, tudo bem? Vamos começar nossa reunião.", voice } });
+      audioRef.current?.pause();
+      const audio = new Audio(audioUrl);
+      audioRef.current = audio;
+      await audio.play();
+    } catch (e: any) {
+      alert(e.message ?? "Não foi possível testar a voz agora.");
+    } finally {
+      setTestingVoice(false);
     }
   }
 
@@ -173,6 +196,10 @@ function SimuladorPage() {
                 {PERSONAS.map((p) => <SelectItem key={p.key} value={p.key}>{p.label}</SelectItem>)}
               </SelectContent>
             </Select>
+            <Button onClick={() => void testVoice()} disabled={testingVoice} className="w-full" size="sm" variant="outline">
+              {testingVoice ? <Loader2 className="h-4 w-4 animate-spin" /> : <Ear className="h-4 w-4" />}
+              Testar voz
+            </Button>
             <p className="text-xs text-muted-foreground">Inicie falando ou digitando. Pratique GPCT, SPIN e abertura consultiva.</p>
             <Button onClick={requestFeedback} disabled={messages.length < 2 || loadingFb} className="w-full" size="sm" variant="secondary">
               {loadingFb ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
@@ -199,6 +226,9 @@ function SimuladorPage() {
             ))}
             {thinking && (
               <div className="flex justify-start"><Badge variant="secondary"><Loader2 className="h-3 w-3 animate-spin mr-1" />Pensando…</Badge></div>
+            )}
+            {!thinking && voiceLoading && (
+              <div className="flex justify-start"><Badge variant="secondary"><Volume2 className="h-3 w-3 animate-pulse mr-1" />Preparando áudio…</Badge></div>
             )}
             <div ref={endRef} />
           </CardContent>
