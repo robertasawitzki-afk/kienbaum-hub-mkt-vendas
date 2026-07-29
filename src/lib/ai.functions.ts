@@ -24,9 +24,11 @@ export const transcribeAudioFn = createServerFn({ method: "POST" })
   });
 
 export const synthesizeSpeechFn = createServerFn({ method: "POST" })
-  .inputValidator((input: unknown) => z.object({ text: z.string().min(1).max(2000) }).parse(input))
+  .inputValidator((input: unknown) =>
+    z.object({ text: z.string().min(1).max(2000), voice: z.string().optional() }).parse(input),
+  )
   .handler(async ({ data }) => {
-    const audioUrl = await synthesizeSpeech(data.text);
+    const audioUrl = await synthesizeSpeech(data.text, data.voice);
     return { audioUrl };
   });
 

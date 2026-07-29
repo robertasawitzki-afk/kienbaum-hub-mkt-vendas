@@ -19,10 +19,10 @@ export const Route = createFileRoute("/treinamento/simulador")({
 type Msg = { role: "user" | "assistant"; content: string };
 
 const PERSONAS = [
-  { key: "ceo_industrial", label: "CEO industrial (familiar, R$ 400M)" },
-  { key: "cfo", label: "CFO de serviços B2B (R$ 800M)" },
-  { key: "chro", label: "CHRO de varejo (15k colaboradores)" },
-  { key: "dono_familiar", label: "Dono familiar fundador (72 anos)" },
+  { key: "ceo_industrial", label: "CEO industrial (familiar, R$ 400M)", voice: "Charon" }, // Roberto Almeida (m)
+  { key: "cfo", label: "CFO de serviços B2B (R$ 800M)", voice: "Kore" }, // Marina Costa (f)
+  { key: "chro", label: "CHRO de varejo (15k colaboradores)", voice: "Orus" }, // Paulo Henrique (m)
+  { key: "dono_familiar", label: "Dono familiar fundador (72 anos)", voice: "Fenrir" }, // Dr. Antônio (m)
 ];
 
 function SimuladorPage() {
@@ -62,7 +62,8 @@ function SimuladorPage() {
   async function speak(text: string) {
     if (!voiceOut) return;
     try {
-      const { audioUrl } = await speakFn({ data: { text: text.slice(0, 2000) } });
+      const voice = PERSONAS.find((p) => p.key === persona)?.voice;
+      const { audioUrl } = await speakFn({ data: { text: text.slice(0, 2000), voice } });
       audioRef.current?.pause();
       const audio = new Audio(audioUrl);
       audioRef.current = audio;
