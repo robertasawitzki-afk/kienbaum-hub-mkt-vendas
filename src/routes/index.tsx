@@ -3,7 +3,7 @@ import { ArrowRight } from "lucide-react";
 
 import { NAV } from "@/lib/nav";
 import { useAuth } from "@/lib/auth-context";
-import logoKienbaum from "@/assets/logo-kienbaum.png.asset.json";
+import logoKienbaum from "@/assets/kienbaum-logo-white.png";
 
 
 export const Route = createFileRoute("/")({
@@ -25,8 +25,9 @@ function Index() {
   return (
     <div className="mx-auto w-full max-w-6xl px-6 py-12">
       <header className="mb-12">
-        <div className="mb-8 flex items-center justify-center rounded-[4px] bg-primary px-8 py-6">
-          <img src={logoKienbaum.url} alt="Kienbaum" className="h-10 w-auto" />
+        <div className="mb-8 flex items-center justify-center gap-4 rounded-[4px] bg-primary px-8 py-6">
+          <img src={logoKienbaum} alt="Kienbaum" className="h-10 w-auto" />
+          {/* TODO: logo da Peerz aqui, na sequência (Kienbaum & Peerz) — aguardando arquivo */}
         </div>
         <p className="text-xs uppercase tracking-[0.22em] text-accent">Kienbaum Porto Alegre</p>
         <h1 className="mt-3 text-4xl font-semibold tracking-tight text-foreground">
