@@ -56,13 +56,18 @@ function toGeminiPayload(messages: ChatMessage[]) {
   return { systemParts, contents };
 }
 
+/** Modelo do Gemini sobrecarregado (503) é transitório — tenta mais uma vez antes de desistir. */
 async function geminiRequest(model: string, body: Record<string, unknown>) {
   const key = requireGeminiKey();
-  const res = await fetch(`${GEMINI_BASE}/models/${model}:generateContent?key=${key}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
+  const url = `${GEMINI_BASE}/models/${model}:generateContent?key=${key}`;
+  const opts = { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) };
+
+  let res = await fetch(url, opts);
+  if (res.status === 503) {
+    await new Promise((r) => setTimeout(r, 1500));
+    res = await fetch(url, opts);
+  }
+
   if (!res.ok) {
     const raw = await res.text().catch(() => "");
     if (res.status === 429)
@@ -72,6 +77,10 @@ async function geminiRequest(model: string, body: Record<string, unknown>) {
     if (res.status === 400 || res.status === 403)
       throw new Error(
         "Chave da API Gemini inválida ou sem permissão. Confira GEMINI_API_KEY no .env.",
+      );
+    if (res.status === 503)
+      throw new Error(
+        "O Gemini está sobrecarregado no momento. Tente novamente em alguns instantes.",
       );
     throw new Error(`Falha na IA (${res.status}): ${raw.slice(0, 300)}`);
   }
