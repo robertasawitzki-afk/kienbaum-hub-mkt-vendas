@@ -136,7 +136,13 @@ export const revokeRole = createServerFn({ method: "POST" })
 
 const ROLE_ENUM_INVITE = z.enum(["admin", "cp", "socio", "head_produto", "consultora", "staff"]);
 
-/** Convida uma pessoa por e-mail (Supabase Auth) e já atribui um papel inicial. */
+/**
+ * Convida uma pessoa e já atribui um papel inicial. Gera o link diretamente
+ * (generateLink) em vez de depender só do envio automático de e-mail do
+ * Supabase — a entrega por e-mail de terceiros nem sempre chega (spam,
+ * SMTP), então o admin também pode copiar o link e mandar por WhatsApp etc.
+ * Best-effort: tenta enviar o e-mail também, mas não falha se isso não der certo.
+ */
 export const inviteUser = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i: unknown) =>
@@ -151,12 +157,15 @@ export const inviteUser = createServerFn({ method: "POST" })
     await assertAdmin(supabase, userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    const { data: invited, error } = await supabaseAdmin.auth.admin.inviteUserByEmail(data.email, {
-      redirectTo: data.redirectTo,
+    const { data: linked, error } = await supabaseAdmin.auth.admin.generateLink({
+      type: "invite",
+      email: data.email,
+      options: { redirectTo: data.redirectTo },
     });
     if (error) throw new Error(error.message);
 
-    const newUserId = invited.user.id;
+    const newUserId = linked.user.id;
+    const inviteLink = linked.properties?.action_link ?? "";
     await supabaseAdmin.from("profiles").upsert(
       { id: newUserId, display_name: data.email.split("@")[0] },
       { onConflict: "id", ignoreDuplicates: true },
@@ -170,7 +179,7 @@ export const inviteUser = createServerFn({ method: "POST" })
       email: data.email,
       role: data.role,
     });
-    return { ok: true, userId: newUserId };
+    return { ok: true, userId: newUserId, inviteLink };
   });
 
 /** Saúde do banco: contagens agregadas. */

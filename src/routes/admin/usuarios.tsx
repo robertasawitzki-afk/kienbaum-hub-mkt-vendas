@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { toast } from "sonner";
-import { Loader2, Search, Shield, ShieldCheck, UserPlus, RefreshCw, Mail } from "lucide-react";
+import { Loader2, Search, Shield, ShieldCheck, UserPlus, RefreshCw, Mail, MessageCircle } from "lucide-react";
 
 import { listUsers, grantRole, revokeRole, bootstrapAdmin, adminExists, inviteUser } from "@/lib/admin.functions";
 import { useAuth, type AppRole } from "@/lib/auth-context";
@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { CopyButton } from "@/components/copy-button";
 
 export const Route = createFileRoute("/admin/usuarios")({
   component: UsuariosTab,
@@ -226,41 +227,54 @@ function UsuariosTab() {
   );
 }
 
+function whatsappLink(phone: string, message: string) {
+  const digits = phone.replace(/\D/g, "");
+  const base = digits ? `https://wa.me/${digits}` : "https://wa.me/";
+  return `${base}?text=${encodeURIComponent(message)}`;
+}
+
 function InviteCard({ onInvited }: { onInvited: () => void }) {
   const runInvite = useServerFn(inviteUser);
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<AppRole>("cp");
+  const [phone, setPhone] = useState("");
   const [sending, setSending] = useState(false);
+  const [lastInvite, setLastInvite] = useState<{ email: string; link: string } | null>(null);
 
   async function send(e: FormEvent) {
     e.preventDefault();
     if (!email.trim()) return;
     setSending(true);
     try {
-      await runInvite({
+      const res = await runInvite({
         data: {
           email: email.trim(),
           role,
           redirectTo: `${window.location.origin}/definir-senha`,
         },
       });
-      toast.success(`Convite enviado para ${email.trim()}`);
+      setLastInvite({ email: email.trim(), link: res.inviteLink });
+      toast.success(`Convite criado para ${email.trim()} — copie o link ou mande por WhatsApp abaixo`);
       setEmail("");
       onInvited();
     } catch (e: any) {
-      toast.error(e.message ?? "Falha ao enviar convite");
+      toast.error(e.message ?? "Falha ao criar convite");
     } finally {
       setSending(false);
     }
   }
 
+  const message = lastInvite
+    ? `Você foi convidado(a) para o Hub de Marketing e Vendas da Kienbaum. Clique no link para criar sua senha e acessar:\n${lastInvite.link}`
+    : "";
+
   return (
     <Card>
       <CardHeader>
         <CardTitle className="text-base flex items-center gap-2"><Mail className="h-4 w-4 text-primary" />Convidar pessoa</CardTitle>
-        <CardDescription>Envia um convite por e-mail (Supabase Auth) com o papel já atribuído. A pessoa define a própria senha ao aceitar.</CardDescription>
+        <CardDescription>Gera um link de acesso com o papel já atribuído. Copie ou envie por WhatsApp — não depende de e-mail chegar.</CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="space-y-4">
         <form onSubmit={send} className="flex flex-wrap items-end gap-3">
           <div className="grid flex-1 min-w-[220px] gap-1.5">
             <label className="text-xs uppercase tracking-wider text-muted-foreground">E-mail</label>
@@ -277,9 +291,32 @@ function InviteCard({ onInvited }: { onInvited: () => void }) {
           </div>
           <Button type="submit" disabled={sending || !email.trim()}>
             {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
-            Enviar convite
+            Gerar convite
           </Button>
         </form>
+
+        {lastInvite && (
+          <div className="rounded-md border border-primary/30 bg-primary/5 p-3 space-y-2">
+            <p className="text-xs text-muted-foreground">
+              Convite para <strong className="text-foreground">{lastInvite.email}</strong> — o link expira em algumas horas, se não for usado.
+            </p>
+            <div className="flex flex-wrap items-center gap-2">
+              <Input
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="WhatsApp da pessoa (opcional, com DDD)"
+                className="max-w-[240px]"
+              />
+              <a href={whatsappLink(phone, message)} target="_blank" rel="noreferrer">
+                <Button type="button" size="sm" variant="outline">
+                  <MessageCircle className="h-3.5 w-3.5" />
+                  Enviar por WhatsApp
+                </Button>
+              </a>
+              <CopyButton text={lastInvite.link} label="Copiar link" />
+            </div>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
