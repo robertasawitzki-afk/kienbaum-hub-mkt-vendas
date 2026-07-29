@@ -19,14 +19,15 @@ export function AppShell({ children }: { children: ReactNode }) {
 
 function AppShellInner({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const { user, loading, signOut } = useAuth();
+  const { user, loading, signOut, hasAccess, rolesLoading, isAdmin } = useAuth();
   const navigate = useNavigate();
   const isAuthRoute = pathname === "/auth";
+  const isDefinirSenhaRoute = pathname === "/definir-senha";
   const isAdminRoute = pathname.startsWith("/admin");
   // Gerador de propostas de Competence Check: sub-app com layout próprio.
   const isPropostaPublica = pathname.startsWith("/proposta/");
   const isPropostasRoute = pathname === "/propostas" || pathname === "/nova-proposta";
-  const isPublicRoute = isAuthRoute || isPropostaPublica;
+  const isPublicRoute = isAuthRoute || isPropostaPublica || isDefinirSenhaRoute;
 
   useEffect(() => {
     if (!loading && !user && !isPublicRoute) {
@@ -42,10 +43,30 @@ function AppShellInner({ children }: { children: ReactNode }) {
   }, [user, pathname, isPublicRoute]);
 
   if (isPublicRoute) return <>{children}</>;
-  if (loading || !user) {
+  if (loading || !user || rolesLoading) {
     return (
       <div className="fixed inset-0 flex items-center justify-center bg-background text-muted-foreground">
         <Loader2 className="h-5 w-5 animate-spin" />
+      </div>
+    );
+  }
+  // Autenticado, mas sem papel atribuído por um admin — sem acesso ao hub
+  // (exceto /admin, que tem sua própria checagem para o primeiro admin).
+  if (!hasAccess && !isAdmin && !isAdminRoute) {
+    return (
+      <div className="fixed inset-0 flex items-center justify-center bg-background px-4">
+        <div className="max-w-sm text-center">
+          <p className="text-xs uppercase tracking-[0.22em] text-primary">Kienbaum Porto Alegre</p>
+          <h1 className="mt-2 text-xl font-semibold text-foreground">Acesso aguardando aprovação</h1>
+          <p className="mt-3 text-sm text-muted-foreground">
+            Sua conta ({user.email}) ainda não recebeu acesso ao hub. Peça a um administrador para te
+            convidar pelo painel de Usuários.
+          </p>
+          <Button variant="outline" size="sm" className="mt-6" onClick={() => void signOut()}>
+            <LogOut className="h-4 w-4" />
+            Sair
+          </Button>
+        </div>
       </div>
     );
   }

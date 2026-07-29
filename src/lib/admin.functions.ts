@@ -134,6 +134,45 @@ export const revokeRole = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+const ROLE_ENUM_INVITE = z.enum(["admin", "cp", "socio", "head_produto", "consultora", "staff"]);
+
+/** Convida uma pessoa por e-mail (Supabase Auth) e já atribui um papel inicial. */
+export const inviteUser = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i: unknown) =>
+    z.object({
+      email: z.string().email(),
+      role: ROLE_ENUM_INVITE,
+      redirectTo: z.string().url(),
+    }).parse(i),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId, claims } = context as any;
+    await assertAdmin(supabase, userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const { data: invited, error } = await supabaseAdmin.auth.admin.inviteUserByEmail(data.email, {
+      redirectTo: data.redirectTo,
+    });
+    if (error) throw new Error(error.message);
+
+    const newUserId = invited.user.id;
+    await supabaseAdmin.from("profiles").upsert(
+      { id: newUserId, display_name: data.email.split("@")[0] },
+      { onConflict: "id", ignoreDuplicates: true },
+    );
+    const { error: roleErr } = await supabaseAdmin
+      .from("user_roles")
+      .upsert({ user_id: newUserId, role: data.role }, { onConflict: "user_id,role" });
+    if (roleErr) throw new Error(roleErr.message);
+
+    await logAudit(supabase, userId, claims?.email, "invite_user", `user:${newUserId}`, {
+      email: data.email,
+      role: data.role,
+    });
+    return { ok: true, userId: newUserId };
+  });
+
 /** Saúde do banco: contagens agregadas. */
 export const dbHealth = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])

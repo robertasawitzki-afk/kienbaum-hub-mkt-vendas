@@ -1,15 +1,16 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { toast } from "sonner";
-import { Loader2, Search, Shield, ShieldCheck, UserPlus, RefreshCw } from "lucide-react";
+import { Loader2, Search, Shield, ShieldCheck, UserPlus, RefreshCw, Mail } from "lucide-react";
 
-import { listUsers, grantRole, revokeRole, bootstrapAdmin, adminExists } from "@/lib/admin.functions";
+import { listUsers, grantRole, revokeRole, bootstrapAdmin, adminExists, inviteUser } from "@/lib/admin.functions";
 import { useAuth, type AppRole } from "@/lib/auth-context";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export const Route = createFileRoute("/admin/usuarios")({
   component: UsuariosTab,
@@ -121,6 +122,8 @@ function UsuariosTab() {
         </div>
       )}
 
+      {isAdmin && <InviteCard onInvited={load} />}
+
       <div className="flex items-center gap-3">
         <div className="relative flex-1 max-w-md">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -216,8 +219,68 @@ function UsuariosTab() {
 
       <p className="text-xs text-muted-foreground">
         <UserPlus className="mr-1 inline h-3 w-3" />
-        Novos usuários entram pela tela de cadastro. Aqui você atribui papéis a quem já se cadastrou.
+        Não há cadastro aberto — o acesso ao hub só acontece por convite (acima). Aqui você também
+        pode ajustar os papéis de quem já foi convidado.
       </p>
     </div>
+  );
+}
+
+function InviteCard({ onInvited }: { onInvited: () => void }) {
+  const runInvite = useServerFn(inviteUser);
+  const [email, setEmail] = useState("");
+  const [role, setRole] = useState<AppRole>("cp");
+  const [sending, setSending] = useState(false);
+
+  async function send(e: FormEvent) {
+    e.preventDefault();
+    if (!email.trim()) return;
+    setSending(true);
+    try {
+      await runInvite({
+        data: {
+          email: email.trim(),
+          role,
+          redirectTo: `${window.location.origin}/definir-senha`,
+        },
+      });
+      toast.success(`Convite enviado para ${email.trim()}`);
+      setEmail("");
+      onInvited();
+    } catch (e: any) {
+      toast.error(e.message ?? "Falha ao enviar convite");
+    } finally {
+      setSending(false);
+    }
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base flex items-center gap-2"><Mail className="h-4 w-4 text-primary" />Convidar pessoa</CardTitle>
+        <CardDescription>Envia um convite por e-mail (Supabase Auth) com o papel já atribuído. A pessoa define a própria senha ao aceitar.</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={send} className="flex flex-wrap items-end gap-3">
+          <div className="grid flex-1 min-w-[220px] gap-1.5">
+            <label className="text-xs uppercase tracking-wider text-muted-foreground">E-mail</label>
+            <Input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="nome@kienbaum.com" />
+          </div>
+          <div className="grid gap-1.5">
+            <label className="text-xs uppercase tracking-wider text-muted-foreground">Papel inicial</label>
+            <Select value={role} onValueChange={(v) => setRole(v as AppRole)}>
+              <SelectTrigger className="w-[180px]"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {ALL_ROLES.map((r) => <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <Button type="submit" disabled={sending || !email.trim()}>
+            {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
+            Enviar convite
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
   );
 }
