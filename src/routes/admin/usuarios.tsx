@@ -300,6 +300,10 @@ function InviteCard({ onInvited }: { onInvited: () => void }) {
             <p className="text-xs text-muted-foreground">
               Convite para <strong className="text-foreground">{lastInvite.email}</strong> — o link expira em algumas horas, se não for usado.
             </p>
+            <p className="text-xs font-medium text-destructive">
+              ⚠️ Não abra este link você mesma para conferir — é de uso único, abrir já consome o
+              convite. Só copie e envie direto para a pessoa.
+            </p>
             <div className="flex flex-wrap items-center gap-2">
               <Input
                 value={phone}
