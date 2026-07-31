@@ -2,9 +2,9 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { toast } from "sonner";
-import { Loader2, Search, Shield, ShieldCheck, UserPlus, RefreshCw, Mail, MessageCircle, Send } from "lucide-react";
+import { Loader2, Search, Shield, ShieldCheck, UserPlus, RefreshCw, Mail, MessageCircle, Send, KeyRound } from "lucide-react";
 
-import { listUsers, grantRole, revokeRole, bootstrapAdmin, adminExists, inviteUser } from "@/lib/admin.functions";
+import { listUsers, grantRole, revokeRole, bootstrapAdmin, adminExists, inviteUser, setUserPassword } from "@/lib/admin.functions";
 import { useAuth, type AppRole } from "@/lib/auth-context";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -35,7 +35,9 @@ type Row = {
   confirmed: boolean;
 };
 
-type LastInvite = { email: string; link: string };
+type LastAction =
+  | { kind: "invite"; email: string; link: string }
+  | { kind: "password"; email: string; password: string };
 
 function UsuariosTab() {
   const { user, isAdmin } = useAuth();
@@ -44,7 +46,7 @@ function UsuariosTab() {
   const [search, setSearch] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
   const [needsBootstrap, setNeedsBootstrap] = useState(false);
-  const [lastInvite, setLastInvite] = useState<LastInvite | null>(null);
+  const [lastAction, setLastAction] = useState<LastAction | null>(null);
 
   const runList = useServerFn(listUsers);
   const runGrant = useServerFn(grantRole);
@@ -52,6 +54,7 @@ function UsuariosTab() {
   const runBootstrap = useServerFn(bootstrapAdmin);
   const runAdminExists = useServerFn(adminExists);
   const runInvite = useServerFn(inviteUser);
+  const runSetPassword = useServerFn(setUserPassword);
 
   const load = async () => {
     setLoading(true);
@@ -110,11 +113,26 @@ function UsuariosTab() {
           redirectTo: `${window.location.origin}/definir-senha`,
         },
       });
-      setLastInvite({ email: row.email, link: res.inviteLink });
+      setLastAction({ kind: "invite", email: row.email, link: res.inviteLink });
       toast.success(`Novo link gerado para ${row.email} — copie ou mande por WhatsApp abaixo`);
       await load();
     } catch (e: any) {
       toast.error(e.message ?? "Falha ao reenviar convite");
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const createPassword = async (row: Row) => {
+    if (!window.confirm(`Criar login e senha direto para ${row.email ?? row.display_name}? Use só se o convite por link não estiver funcionando.`)) return;
+    setBusy("password:" + row.id);
+    try {
+      const res = await runSetPassword({ data: { user_id: row.id } });
+      setLastAction({ kind: "password", email: res.email, password: res.password });
+      toast.success(`Login criado para ${res.email}`);
+      await load();
+    } catch (e: any) {
+      toast.error(e.message ?? "Falha ao criar senha");
     } finally {
       setBusy(null);
     }
@@ -153,11 +171,11 @@ function UsuariosTab() {
       {isAdmin && (
         <InviteCard
           onInvited={load}
-          onResult={(r) => setLastInvite(r)}
+          onResult={(r) => setLastAction(r)}
         />
       )}
 
-      {lastInvite && <InviteLinkResult invite={lastInvite} onDismiss={() => setLastInvite(null)} />}
+      {lastAction && <LastActionResult action={lastAction} onDismiss={() => setLastAction(null)} />}
 
       <div className="flex items-center gap-3">
         <div className="relative flex-1 max-w-md">
@@ -250,6 +268,17 @@ function UsuariosTab() {
                             Reenviar convite
                           </Button>
                         )}
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={busy === "password:" + r.id}
+                          onClick={() => createPassword(r)}
+                          className="h-7 text-[11px] border-amber-500/40 text-amber-700"
+                          title="Cria login e senha direto, sem depender de link/e-mail"
+                        >
+                          {busy === "password:" + r.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <KeyRound className="h-3 w-3" />}
+                          Criar senha de acesso
+                        </Button>
                         {ALL_ROLES.map(({ value, label }) => (
                           <Button
                             key={value}
@@ -287,22 +316,34 @@ function whatsappLink(phone: string, message: string) {
   return `${base}?text=${encodeURIComponent(message)}`;
 }
 
-function InviteLinkResult({ invite, onDismiss }: { invite: LastInvite; onDismiss: () => void }) {
+function LastActionResult({ action, onDismiss }: { action: LastAction; onDismiss: () => void }) {
   const [phone, setPhone] = useState("");
-  const message = `Você foi convidado(a) para o Hub de Marketing e Vendas da Kienbaum. Clique no link para criar sua senha e acessar:\n${invite.link}`;
+  const isInvite = action.kind === "invite";
+  const message = isInvite
+    ? `Você foi convidado(a) para o Hub de Marketing e Vendas da Kienbaum. Clique no link para criar sua senha e acessar:\n${action.link}`
+    : `Seu acesso ao Hub de Marketing e Vendas da Kienbaum:\nSite: https://kienbaum.space\nE-mail: ${action.email}\nSenha: ${action.password}\n\nRecomendo trocar a senha depois de entrar.`;
+  const copyText = isInvite ? action.link : `E-mail: ${action.email}\nSenha: ${action.password}`;
 
   return (
     <div className="rounded-md border border-primary/30 bg-primary/5 p-3 space-y-2">
       <div className="flex items-start justify-between gap-2">
-        <p className="text-xs text-muted-foreground">
-          Convite para <strong className="text-foreground">{invite.email}</strong> — o link expira em algumas horas, se não for usado.
-        </p>
+        {isInvite ? (
+          <p className="text-xs text-muted-foreground">
+            Convite para <strong className="text-foreground">{action.email}</strong> — o link expira em algumas horas, se não for usado.
+          </p>
+        ) : (
+          <p className="text-xs text-muted-foreground">
+            Login criado para <strong className="text-foreground">{action.email}</strong> — senha: <strong className="text-foreground font-mono">{action.password}</strong>
+          </p>
+        )}
         <button type="button" onClick={onDismiss} className="text-xs text-muted-foreground hover:text-foreground">Fechar</button>
       </div>
-      <p className="text-xs font-medium text-destructive">
-        ⚠️ Não abra este link você mesma para conferir — é de uso único, abrir já consome o
-        convite. Só copie e envie direto para a pessoa.
-      </p>
+      {isInvite && (
+        <p className="text-xs font-medium text-destructive">
+          ⚠️ Não abra este link você mesma para conferir — é de uso único, abrir já consome o
+          convite. Só copie e envie direto para a pessoa.
+        </p>
+      )}
       <div className="flex flex-wrap items-center gap-2">
         <Input
           value={phone}
@@ -316,13 +357,13 @@ function InviteLinkResult({ invite, onDismiss }: { invite: LastInvite; onDismiss
             Enviar por WhatsApp
           </Button>
         </a>
-        <CopyButton text={invite.link} label="Copiar link" />
+        <CopyButton text={copyText} label={isInvite ? "Copiar link" : "Copiar login/senha"} />
       </div>
     </div>
   );
 }
 
-function InviteCard({ onInvited, onResult }: { onInvited: () => void; onResult: (r: LastInvite) => void }) {
+function InviteCard({ onInvited, onResult }: { onInvited: () => void; onResult: (r: LastAction) => void }) {
   const runInvite = useServerFn(inviteUser);
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<AppRole>("cp");
@@ -340,7 +381,7 @@ function InviteCard({ onInvited, onResult }: { onInvited: () => void; onResult: 
           redirectTo: `${window.location.origin}/definir-senha`,
         },
       });
-      onResult({ email: email.trim(), link: res.inviteLink });
+      onResult({ kind: "invite", email: email.trim(), link: res.inviteLink });
       toast.success(`Convite criado para ${email.trim()} — copie o link ou mande por WhatsApp abaixo`);
       setEmail("");
       onInvited();

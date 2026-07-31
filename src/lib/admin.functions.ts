@@ -191,6 +191,39 @@ export const inviteUser = createServerFn({ method: "POST" })
     return { ok: true, userId: newUserId, inviteLink };
   });
 
+function randomPassword(): string {
+  const alphabet = "abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ23456789";
+  const bytes = crypto.getRandomValues(new Uint8Array(10));
+  return Array.from(bytes, (b) => alphabet[b % alphabet.length]).join("");
+}
+
+/**
+ * Cria login e senha direto para alguém que não está conseguindo entrar
+ * pelo link de convite (falha de e-mail, link consumido etc). Confirma o
+ * e-mail e define uma senha temporária — a pessoa consegue logar na hora
+ * com e-mail + essa senha, sem depender de nenhum link.
+ */
+export const setUserPassword = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i: unknown) => z.object({ user_id: z.string().uuid() }).parse(i))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId, claims } = context as any;
+    await assertAdmin(supabase, userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const password = randomPassword();
+    const { data: updated, error } = await supabaseAdmin.auth.admin.updateUserById(data.user_id, {
+      password,
+      email_confirm: true,
+    });
+    if (error) throw new Error(error.message);
+
+    await logAudit(supabase, userId, claims?.email, "set_user_password", `user:${data.user_id}`, {
+      email: updated.user.email,
+    });
+    return { ok: true, email: updated.user.email as string, password };
+  });
+
 /** Saúde do banco: contagens agregadas. */
 export const dbHealth = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
