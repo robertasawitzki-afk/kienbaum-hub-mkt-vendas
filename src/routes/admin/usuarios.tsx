@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { toast } from "sonner";
-import { Loader2, Search, Shield, ShieldCheck, UserPlus, RefreshCw, Mail, MessageCircle } from "lucide-react";
+import { Loader2, Search, Shield, ShieldCheck, UserPlus, RefreshCw, Mail, MessageCircle, Send } from "lucide-react";
 
 import { listUsers, grantRole, revokeRole, bootstrapAdmin, adminExists, inviteUser } from "@/lib/admin.functions";
 import { useAuth, type AppRole } from "@/lib/auth-context";
@@ -31,7 +31,11 @@ type Row = {
   display_name: string | null;
   created_at: string;
   roles: string[];
+  email: string | null;
+  confirmed: boolean;
 };
+
+type LastInvite = { email: string; link: string };
 
 function UsuariosTab() {
   const { user, isAdmin } = useAuth();
@@ -40,12 +44,14 @@ function UsuariosTab() {
   const [search, setSearch] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
   const [needsBootstrap, setNeedsBootstrap] = useState(false);
+  const [lastInvite, setLastInvite] = useState<LastInvite | null>(null);
 
   const runList = useServerFn(listUsers);
   const runGrant = useServerFn(grantRole);
   const runRevoke = useServerFn(revokeRole);
   const runBootstrap = useServerFn(bootstrapAdmin);
   const runAdminExists = useServerFn(adminExists);
+  const runInvite = useServerFn(inviteUser);
 
   const load = async () => {
     setLoading(true);
@@ -71,7 +77,7 @@ function UsuariosTab() {
     if (!search) return rows;
     const s = search.toLowerCase();
     return rows.filter(
-      (r) => r.display_name?.toLowerCase().includes(s) || r.id.includes(s),
+      (r) => r.display_name?.toLowerCase().includes(s) || r.email?.toLowerCase().includes(s) || r.id.includes(s),
     );
   }, [rows, search]);
 
@@ -88,6 +94,27 @@ function UsuariosTab() {
       await load();
     } catch (e: any) {
       toast.error(e.message ?? "Falha ao atualizar papel");
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const resend = async (row: Row) => {
+    if (!row.email) { toast.error("Este usuário não tem e-mail conhecido."); return; }
+    setBusy("resend:" + row.id);
+    try {
+      const res = await runInvite({
+        data: {
+          email: row.email,
+          role: (row.roles[0] as AppRole) ?? "cp",
+          redirectTo: `${window.location.origin}/definir-senha`,
+        },
+      });
+      setLastInvite({ email: row.email, link: res.inviteLink });
+      toast.success(`Novo link gerado para ${row.email} — copie ou mande por WhatsApp abaixo`);
+      await load();
+    } catch (e: any) {
+      toast.error(e.message ?? "Falha ao reenviar convite");
     } finally {
       setBusy(null);
     }
@@ -123,7 +150,14 @@ function UsuariosTab() {
         </div>
       )}
 
-      {isAdmin && <InviteCard onInvited={load} />}
+      {isAdmin && (
+        <InviteCard
+          onInvited={load}
+          onResult={(r) => setLastInvite(r)}
+        />
+      )}
+
+      {lastInvite && <InviteLinkResult invite={lastInvite} onDismiss={() => setLastInvite(null)} />}
 
       <div className="flex items-center gap-3">
         <div className="relative flex-1 max-w-md">
@@ -131,7 +165,7 @@ function UsuariosTab() {
           <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Buscar por nome ou ID..."
+            placeholder="Buscar por nome, e-mail ou ID..."
             className="pl-9"
           />
         </div>
@@ -146,7 +180,8 @@ function UsuariosTab() {
           <table className="w-full text-sm">
             <thead className="border-b border-border text-left text-xs uppercase tracking-wider text-muted-foreground">
               <tr>
-                <th className="px-4 py-3">Nome</th>
+                <th className="px-4 py-3">Nome / e-mail</th>
+                <th className="px-4 py-3">Status</th>
                 <th className="px-4 py-3">Papéis</th>
                 <th className="px-4 py-3">Cadastro</th>
                 <th className="px-4 py-3 text-right">Ações</th>
@@ -155,14 +190,14 @@ function UsuariosTab() {
             <tbody>
               {loading && (
                 <tr>
-                  <td colSpan={4} className="px-4 py-8 text-center text-muted-foreground">
+                  <td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">
                     <Loader2 className="mx-auto h-5 w-5 animate-spin" />
                   </td>
                 </tr>
               )}
               {!loading && filtered.length === 0 && (
                 <tr>
-                  <td colSpan={4} className="px-4 py-8 text-center text-muted-foreground">
+                  <td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">
                     Nenhum usuário encontrado.
                   </td>
                 </tr>
@@ -176,7 +211,14 @@ function UsuariosTab() {
                         {r.display_name || "—"}
                         {isSelf && <span className="ml-2 text-xs text-muted-foreground">(você)</span>}
                       </div>
-                      <div className="text-xs text-muted-foreground">{r.id.slice(0, 8)}...</div>
+                      <div className="text-xs text-muted-foreground">{r.email ?? r.id.slice(0, 8) + "..."}</div>
+                    </td>
+                    <td className="px-4 py-3">
+                      {r.confirmed ? (
+                        <Badge variant="outline" className="border-emerald-500/40 text-emerald-700">Ativo</Badge>
+                      ) : (
+                        <Badge variant="outline" className="border-amber-500/40 text-amber-700">Convite pendente</Badge>
+                      )}
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex flex-wrap gap-1.5">
@@ -196,6 +238,18 @@ function UsuariosTab() {
                     </td>
                     <td className="px-4 py-3 text-right">
                       <div className="flex flex-wrap justify-end gap-1.5">
+                        {!r.confirmed && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            disabled={busy === "resend:" + r.id}
+                            onClick={() => resend(r)}
+                            className="h-7 text-[11px] border-primary/40 text-primary"
+                          >
+                            {busy === "resend:" + r.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Send className="h-3 w-3" />}
+                            Reenviar convite
+                          </Button>
+                        )}
                         {ALL_ROLES.map(({ value, label }) => (
                           <Button
                             key={value}
@@ -220,8 +274,8 @@ function UsuariosTab() {
 
       <p className="text-xs text-muted-foreground">
         <UserPlus className="mr-1 inline h-3 w-3" />
-        Não há cadastro aberto — o acesso ao hub só acontece por convite (acima). Aqui você também
-        pode ajustar os papéis de quem já foi convidado.
+        Não há cadastro aberto — o acesso ao hub só acontece por convite (acima). "Convite pendente"
+        significa que a pessoa ainda não definiu a senha — use "Reenviar convite" para gerar um link novo.
       </p>
     </div>
   );
@@ -233,13 +287,46 @@ function whatsappLink(phone: string, message: string) {
   return `${base}?text=${encodeURIComponent(message)}`;
 }
 
-function InviteCard({ onInvited }: { onInvited: () => void }) {
+function InviteLinkResult({ invite, onDismiss }: { invite: LastInvite; onDismiss: () => void }) {
+  const [phone, setPhone] = useState("");
+  const message = `Você foi convidado(a) para o Hub de Marketing e Vendas da Kienbaum. Clique no link para criar sua senha e acessar:\n${invite.link}`;
+
+  return (
+    <div className="rounded-md border border-primary/30 bg-primary/5 p-3 space-y-2">
+      <div className="flex items-start justify-between gap-2">
+        <p className="text-xs text-muted-foreground">
+          Convite para <strong className="text-foreground">{invite.email}</strong> — o link expira em algumas horas, se não for usado.
+        </p>
+        <button type="button" onClick={onDismiss} className="text-xs text-muted-foreground hover:text-foreground">Fechar</button>
+      </div>
+      <p className="text-xs font-medium text-destructive">
+        ⚠️ Não abra este link você mesma para conferir — é de uso único, abrir já consome o
+        convite. Só copie e envie direto para a pessoa.
+      </p>
+      <div className="flex flex-wrap items-center gap-2">
+        <Input
+          value={phone}
+          onChange={(e) => setPhone(e.target.value)}
+          placeholder="WhatsApp da pessoa (opcional, com DDD)"
+          className="max-w-[240px]"
+        />
+        <a href={whatsappLink(phone, message)} target="_blank" rel="noreferrer">
+          <Button type="button" size="sm" variant="outline">
+            <MessageCircle className="h-3.5 w-3.5" />
+            Enviar por WhatsApp
+          </Button>
+        </a>
+        <CopyButton text={invite.link} label="Copiar link" />
+      </div>
+    </div>
+  );
+}
+
+function InviteCard({ onInvited, onResult }: { onInvited: () => void; onResult: (r: LastInvite) => void }) {
   const runInvite = useServerFn(inviteUser);
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<AppRole>("cp");
-  const [phone, setPhone] = useState("");
   const [sending, setSending] = useState(false);
-  const [lastInvite, setLastInvite] = useState<{ email: string; link: string } | null>(null);
 
   async function send(e: FormEvent) {
     e.preventDefault();
@@ -253,7 +340,7 @@ function InviteCard({ onInvited }: { onInvited: () => void }) {
           redirectTo: `${window.location.origin}/definir-senha`,
         },
       });
-      setLastInvite({ email: email.trim(), link: res.inviteLink });
+      onResult({ email: email.trim(), link: res.inviteLink });
       toast.success(`Convite criado para ${email.trim()} — copie o link ou mande por WhatsApp abaixo`);
       setEmail("");
       onInvited();
@@ -264,17 +351,13 @@ function InviteCard({ onInvited }: { onInvited: () => void }) {
     }
   }
 
-  const message = lastInvite
-    ? `Você foi convidado(a) para o Hub de Marketing e Vendas da Kienbaum. Clique no link para criar sua senha e acessar:\n${lastInvite.link}`
-    : "";
-
   return (
     <Card>
       <CardHeader>
         <CardTitle className="text-base flex items-center gap-2"><Mail className="h-4 w-4 text-primary" />Convidar pessoa</CardTitle>
         <CardDescription>Gera um link de acesso com o papel já atribuído. Copie ou envie por WhatsApp — não depende de e-mail chegar.</CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent>
         <form onSubmit={send} className="flex flex-wrap items-end gap-3">
           <div className="grid flex-1 min-w-[220px] gap-1.5">
             <label className="text-xs uppercase tracking-wider text-muted-foreground">E-mail</label>
@@ -294,33 +377,6 @@ function InviteCard({ onInvited }: { onInvited: () => void }) {
             Gerar convite
           </Button>
         </form>
-
-        {lastInvite && (
-          <div className="rounded-md border border-primary/30 bg-primary/5 p-3 space-y-2">
-            <p className="text-xs text-muted-foreground">
-              Convite para <strong className="text-foreground">{lastInvite.email}</strong> — o link expira em algumas horas, se não for usado.
-            </p>
-            <p className="text-xs font-medium text-destructive">
-              ⚠️ Não abra este link você mesma para conferir — é de uso único, abrir já consome o
-              convite. Só copie e envie direto para a pessoa.
-            </p>
-            <div className="flex flex-wrap items-center gap-2">
-              <Input
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder="WhatsApp da pessoa (opcional, com DDD)"
-                className="max-w-[240px]"
-              />
-              <a href={whatsappLink(phone, message)} target="_blank" rel="noreferrer">
-                <Button type="button" size="sm" variant="outline">
-                  <MessageCircle className="h-3.5 w-3.5" />
-                  Enviar por WhatsApp
-                </Button>
-              </a>
-              <CopyButton text={lastInvite.link} label="Copiar link" />
-            </div>
-          </div>
-        )}
       </CardContent>
     </Card>
   );

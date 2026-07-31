@@ -86,12 +86,21 @@ export const listUsers = createServerFn({ method: "POST" })
       roleMap.set(r.user_id, arr);
     });
 
-    return (profiles ?? []).map((p: any) => ({
-      id: p.id,
-      display_name: p.display_name,
-      created_at: p.created_at,
-      roles: roleMap.get(p.id) ?? [],
-    }));
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: authList } = await supabaseAdmin.auth.admin.listUsers({ perPage: 1000 });
+    const authMap = new Map((authList?.users ?? []).map((u: any) => [u.id, u]));
+
+    return (profiles ?? []).map((p: any) => {
+      const au = authMap.get(p.id);
+      return {
+        id: p.id,
+        display_name: p.display_name,
+        created_at: p.created_at,
+        roles: roleMap.get(p.id) ?? [],
+        email: au?.email ?? null,
+        confirmed: !!au?.email_confirmed_at,
+      };
+    });
   });
 
 const ROLE_ENUM = z.enum(["admin", "cp", "socio", "head_produto", "consultora", "staff"]);
